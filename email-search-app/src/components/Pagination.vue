@@ -12,6 +12,6 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
     const { currentPage, totalPages, goToPage, totalEntries } = defineProps(['currentPage', 'totalPages', 'goToPage', 'totalEntries'])
 </script>

@@ -26,10 +26,10 @@
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
     import { ref } from 'vue'
     import Pagination from './Pagination.vue'
-    import Searchbar from './SearchBar.vue'
+    import Searchbar from './Searchbar.vue'
     import Table from './Table.vue'
     const url = import.meta.env.VITE_BASE_URL
     const SEARCH_MAX_RESULT = 50
@@ -41,7 +41,7 @@
     const totalEntries = ref(0)
     const totalPages = ref(1)
 
-    const handleSearch = async ( queryString, page = 1 ) => {
+    const handleSearch = async ( queryString: string, page = 1 ) => {
         try {
             const credentials = btoa('admin:Complexpass#123')
             const response = await fetch(`${url}/api/enron_emails/_search`,{
@@ -66,7 +66,7 @@
             totalEntries.value = formattedResp.hits.total.value
             totalPages.value = Math.ceil(totalEntries.value/SEARCH_MAX_RESULT)
             const extractData = formattedResp.hits.hits
-            data.value = extractData.map(({_source}) => {
+            data.value = extractData.map(({_source}:any) => {
                 const {to, from, subject, date, bodyMsg} = _source
                 return {to, from, subject, date, bodyMsg}
             })
@@ -75,20 +75,20 @@
         }
     }
 
-    const goToPage = ( page ) => {
+    const goToPage = ( page: number ) => {
         if( page >= 1 && page <= totalPages.value ) {
             currentPage.value = page
             handleSearch(searchQuery.value, page )
         }
     }
 
-    const wordHighlighter = (query, text) => {
+    const wordHighlighter = (query:string, text:string) => {
         const regex = new RegExp(`\\b${query}\\b`, 'gi');
         const highlightedText = text.replace(regex, match => `<span class="font-bold">${match}</span>`)
         return highlightedText
     }
 
-    const handleEnter = ( searchQ ) => {
+    const handleEnter = ( searchQ:string ) => {
         searchQuery.value = searchQ
         bodyMessage.value = ' '
         subheaderContent.value = ' '
@@ -96,7 +96,12 @@
         handleSearch(searchQuery.value)
     }
 
-    const selectRow = ( selectedItem ) => {
+    type SelectedItem = {
+        subject: string,
+        bodyMsg: string
+    }
+
+    const selectRow = ( selectedItem: SelectedItem ) => {
         bodyMessage.value = wordHighlighter(searchQuery.value, selectedItem.bodyMsg)
         subheaderContent.value = selectedItem.subject
     }

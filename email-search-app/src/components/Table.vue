@@ -17,6 +17,6 @@
     </table>
 </template>
 
-<script setup>
+<script setup lang="ts">
     const { data, selectRow } = defineProps(['data', 'selectRow'])
 </script>
