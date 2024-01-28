@@ -31,20 +31,38 @@
     import Pagination from './Pagination.vue'
     import Searchbar from './Searchbar.vue'
     import Table from './Table.vue'
-    const url = import.meta.env.VITE_BASE_URL
-    const SEARCH_MAX_RESULT = 50
-    const data = ref()
-    const searchQuery = ref('')
-    const subheaderContent = ref('')
-    const bodyMessage = ref('...')
-    const currentPage = ref(1)
-    const totalEntries = ref(0)
-    const totalPages = ref(1)
 
-    const handleSearch = async ( queryString: string, page = 1 ) => {
+    const VITE_BASE_URL = import.meta.env.VITE_BASE_URL
+    const SEARCH_MAX_RESULT = 50
+
+    type Items = {
+        bodyMsg : string
+        subject : string
+        from    : string
+        date    : string
+        to      : string
+    }
+
+    type ApiResponse = {
+        hits: {
+            total: { value: number };
+            hits: Array<{_source: Items}>
+        }
+    }
+
+    const data = ref<Array<Items>>()
+    const searchQuery = ref<string>('')
+    const subheaderContent = ref<string>('')
+    const bodyMessage = ref<string>('...')
+    const currentPage = ref<number>(1)
+    const totalEntries = ref<number>(0)
+    const totalPages = ref<number>(1)
+
+
+    const handleSearch = async ( queryString: string, page = 1 ): Promise<void> => {
         try {
             const credentials = btoa('admin:Complexpass#123')
-            const response = await fetch(`${url}/api/enron_emails/_search`,{
+            const response = await fetch(`${VITE_BASE_URL}/api/enron_emails/_search`,{
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -62,14 +80,17 @@
                     "_source": []
                 })
             })
-            const formattedResp = await response.json()
+            const formattedResp: ApiResponse = await response.json()
             totalEntries.value = formattedResp.hits.total.value
             totalPages.value = Math.ceil(totalEntries.value/SEARCH_MAX_RESULT)
             const extractData = formattedResp.hits.hits
-            data.value = extractData.map(({_source}:any) => {
-                const {to, from, subject, date, bodyMsg} = _source
-                return {to, from, subject, date, bodyMsg}
-            })
+            data.value = extractData.map(({ _source }: {  _source: Items }) => ({
+                to: _source.to,
+                from: _source.from,
+                subject: _source.subject,
+                date: _source.date,
+                bodyMsg: _source.bodyMsg,
+            }))
         } catch( err ) {
             console.log("Error trying to fetch: ", err)
         }
@@ -82,13 +103,13 @@
         }
     }
 
-    const wordHighlighter = (query:string, text:string) => {
+    const wordHighlighter = (query:string, text:string): string => {
         const regex = new RegExp(`\\b${query}\\b`, 'gi');
         const highlightedText = text.replace(regex, match => `<span class="font-bold">${match}</span>`)
         return highlightedText
     }
 
-    const handleEnter = ( searchQ:string ) => {
+    const handleEnter = ( searchQ:string ): void => {
         searchQuery.value = searchQ
         bodyMessage.value = ' '
         subheaderContent.value = ' '
@@ -96,12 +117,7 @@
         handleSearch(searchQuery.value)
     }
 
-    type SelectedItem = {
-        subject: string,
-        bodyMsg: string
-    }
-
-    const selectRow = ( selectedItem: SelectedItem ) => {
+    const selectRow = ( selectedItem: Items ): void => {
         bodyMessage.value = wordHighlighter(searchQuery.value, selectedItem.bodyMsg)
         subheaderContent.value = selectedItem.subject
     }

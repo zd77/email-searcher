@@ -15,6 +15,6 @@
 
 <script setup lang="ts">
     import {ref} from 'vue'
-    const searchQuery = ref('');
+    const searchQuery = ref<string>('');
     const { handleEnter } = defineProps(['handleEnter'])
 </script>
