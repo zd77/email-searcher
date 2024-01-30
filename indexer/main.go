@@ -49,54 +49,30 @@ type Data struct {
 }
 
 const batchSize = 100
-const maxConcurrentRequests = 10
+const maxConcurrentRequests = 50
 
 func extractEmailInfo(lines *bufio.Scanner) Email {
-	email := Content{}
+	bodyMsg := ""
+	lineMap := make(map[string]string)
+
 	for lines.Scan() {
-		if strings.Contains(lines.Text(), "Message-ID:") && email.Message_ID != " " {
-			email.Message_ID = strings.TrimSpace(lines.Text() + " ")[11:]
-		} else if strings.Contains(lines.Text(), "Date:") && email.Date != " " {
-			email.Date = strings.TrimSpace(lines.Text() + " ")[5:]
-		} else if strings.Contains(lines.Text(), "From:") && email.From != " " {
-			modifiedTxt := lines.Text() + "                 "
-			email.From = strings.TrimSpace(modifiedTxt[7:])
-		} else if strings.Contains(lines.Text(), "To:") && email.To != " " {
-			modifiedTxt := lines.Text() + "                 "
-			email.To = strings.TrimSpace(modifiedTxt[5:])
-		} else if strings.Contains(lines.Text(), "Subject:") && email.Subject != " " {
-			email.Subject = strings.TrimSpace(lines.Text() + " ")[8:]
-		} else if strings.Contains(lines.Text(), "Cc:") {
-			email.Cc = strings.TrimSpace(lines.Text() + ".")[3:]
-		} else if strings.Contains(lines.Text(), "Mime-Version:") {
-			email.Mime_Version = strings.TrimSpace(lines.Text() + ".")[9:]
-		} else if strings.Contains(lines.Text(), "Content-Type:") {
-			email.Content_Type = strings.TrimSpace(lines.Text() + ".")[9:]
-		} else if strings.Contains(lines.Text(), "Content-Transfer-Encoding:") {
-			email.Content_Transfer_Encoding = strings.TrimSpace(lines.Text() + ".")[9:]
-		} else if strings.Contains(lines.Text(), "X-From:") {
-			email.X_From = strings.TrimSpace(lines.Text() + ".")[9:]
-		} else if strings.Contains(lines.Text(), "X-To:") {
-			email.X_To = strings.TrimSpace(lines.Text() + ".")[9:]
-		} else if strings.Contains(lines.Text(), "X-cc:") {
-			email.X_cc = strings.TrimSpace(lines.Text() + ".")[6:]
-		} else if strings.Contains(lines.Text(), "X-bcc:") {
-			email.X_bcc = strings.TrimSpace(lines.Text() + ".")[6:]
-		} else if strings.Contains(lines.Text(), "X-Folder:") {
-			email.X_Folder = strings.TrimSpace(lines.Text() + ".")[9:]
-		} else if strings.Contains(lines.Text(), "X-Origin:") {
-			email.X_Origin = strings.TrimSpace(lines.Text() + ".")[9:]
-		} else if strings.Contains(lines.Text(), "X-FileName:") {
-			email.X_FileName = strings.TrimSpace(lines.Text() + ".")[9:]
-		} else {
-			email.BodyMsg = email.BodyMsg + lines.Text()
+		line := lines.Text()
+		if strings.TrimSpace(line) == "" {
+			continue
 		}
+		parts := strings.SplitN(line, ":", 2)
+		if len(parts) < 2 {
+			bodyMsg += line
+			continue
+		}
+		key, value := strings.TrimSpace(parts[0]), strings.TrimSpace(parts[1])
+		lineMap[key] = value
 	}
 	return Email{
-		From:    email.From,
-		To:      email.To,
-		Subject: email.Subject,
-		BodyMsg: email.BodyMsg,
+		From:    lineMap["From"],
+		To:      lineMap["To"],
+		Subject: lineMap["Subject"],
+		BodyMsg: bodyMsg,
 	}
 }
 
