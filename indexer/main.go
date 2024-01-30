@@ -47,6 +47,8 @@ type Data struct {
 	Records []Email `json:"records"`
 }
 
+// Utilizar mapa para almacenar las lineas de manera mas eficiente
+
 func extractEmailInfo(lines *bufio.Scanner) Email {
 	email := Content{}
 	for lines.Scan() {
@@ -96,6 +98,7 @@ func extractEmailInfo(lines *bufio.Scanner) Email {
 	}
 }
 
+// utilizar goroutines para procesar de manera concurrente los directorios
 func processDirectory(dirPath string) []Email {
 	emails := []Email{}
 	entries, err := os.ReadDir(dirPath)
@@ -124,6 +127,7 @@ func processEmailFile(filePath string) Email {
 	return email
 }
 
+// concurrencia para enviar las solicitudes en paralelo permitiendo el envio por segmentos
 func bulkedIndexData(emails []Email) {
 	user := "admin"
 	password := "Complexpass#123"
