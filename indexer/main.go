@@ -148,7 +148,7 @@ func bulkedIndexData(emails []Email) {
 }
 
 func main() {
-	cpu, err := os.Create("go.performance")
+	cpu, err := os.Create("cpu.perf")
 	if err != nil {
 		log.Fatal(err)
 	}
