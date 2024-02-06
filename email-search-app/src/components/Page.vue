@@ -1,29 +1,29 @@
 <template>
-    <Searchbar 
-        :handleEnter="handleEnter"
-    />
-    <div class="m-4 flex h-screen">
-        <div class="w-1/2 overflow-x-auto mr-2">
-            <div v-if="data && data.length > 0" class="w-auto">
-                <Pagination 
-                    :currentPage="currentPage"
-                    :totalPages="totalPages"
-                    :totalEntries="totalEntries"
-                    :goToPage="goToPage"
+        <Searchbar 
+            :handleEnter="handleEnter"
+        />
+        <div class="m-4 flex h-screen">
+            <div class="w-1/2 overflow-x-auto mr-2">
+                <div v-if="data && data.length > 0" class="w-auto">
+                    <Pagination 
+                        :currentPage="currentPage"
+                        :totalPages="totalPages"
+                        :totalEntries="totalEntries"
+                        :goToPage="goToPage"
+                    />
+                </div>
+                <Table 
+                    :data="data"
+                    :select-row="selectRow"
                 />
             </div>
-            <Table 
-                :data="data"
-                :select-row="selectRow"
-            />
-        </div>
-        <div class="w-1/2 ml-2">
-            <h4 class="pl-4 font-bold">{{ subheaderContent }}</h4>
-            <div class="border w-full h-full p-4">
-                <p v-html="bodyMessage"></p>
+            <div class="w-1/2 ml-2">
+                <h4 class="pl-4 font-bold">{{ subheaderContent }}</h4>
+                <div class="border w-full h-full p-4">
+                    <p v-html="bodyMessage"></p>
+                </div>
             </div>
         </div>
-    </div>
 </template>
 
 <script setup lang="ts">
@@ -31,24 +31,7 @@
     import Pagination from './Pagination.vue'
     import Searchbar from './Searchbar.vue'
     import Table from './Table.vue'
-
-    const VITE_BASE_URL = import.meta.env.VITE_BASE_URL
-    const SEARCH_MAX_RESULT = 50
-
-    type Items = {
-        bodyMsg : string
-        subject : string
-        from    : string
-        date    : string
-        to      : string
-    }
-
-    type ApiResponse = {
-        hits: {
-            total: { value: number };
-            hits: Array<{_source: Items}>
-        }
-    }
+    import { handleSearch, Items } from '../handlers/handleSearch.js'
 
     const data = ref<Array<Items>>()
     const searchQuery = ref<string>('')
@@ -58,48 +41,13 @@
     const totalEntries = ref<number>(0)
     const totalPages = ref<number>(1)
 
-
-    const handleSearch = async ( queryString: string, page = 1 ): Promise<void> => {
-        try {
-            const credentials = btoa('admin:Complexpass#123')
-            const response = await fetch(`${VITE_BASE_URL}/api/enron_emails/_search`,{
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Basic ${credentials}`,
-                },
-                body: JSON.stringify({
-                    "search_type": "match",
-                    "query": {
-                        "term": `${queryString}`,
-                        "field": "_all",
-                    },
-                    "sort_fields": ["-@Date"],
-                    "from": (page - 1) * SEARCH_MAX_RESULT,
-                    "max_results": SEARCH_MAX_RESULT,
-                    "_source": []
-                })
-            })
-            const formattedResp: ApiResponse = await response.json()
-            totalEntries.value = formattedResp.hits.total.value
-            totalPages.value = Math.ceil(totalEntries.value/SEARCH_MAX_RESULT)
-            const extractData = formattedResp.hits.hits
-            data.value = extractData.map(({ _source }: {  _source: Items }) => ({
-                to: _source.to,
-                from: _source.from,
-                subject: _source.subject,
-                date: _source.date,
-                bodyMsg: _source.bodyMsg,
-            }))
-        } catch( err ) {
-            console.log("Error trying to fetch: ", err)
-        }
-    }
-
     const goToPage = ( page: number ) => {
         if( page >= 1 && page <= totalPages.value ) {
             currentPage.value = page
-            handleSearch(searchQuery.value, page )
+            handleSearch(searchQuery.value, totalEntries, totalPages, page )
+                .then(( result ) => {
+                    data.value = result
+                })
         }
     }
 
@@ -114,7 +62,10 @@
         bodyMessage.value = ' '
         subheaderContent.value = ' '
         currentPage.value = 1
-        handleSearch(searchQuery.value)
+        handleSearch(searchQuery.value, totalEntries, totalPages)
+            .then(( result ) => {
+                data.value = result
+            })
     }
 
     const selectRow = ( selectedItem: Items ): void => {
